@@ -147,7 +147,7 @@ if not auth_token:
     auth_url = oauth.get_authorize_url()
     st.markdown(f"<br><br>", unsafe_allow_html=True)
     st.markdown(f'''
-        <a href="{auth_url}" target="_self" style="text-decoration:none;">
+        <a href="{auth_url}" target="_blank" style="text-decoration:none;">
             <div style="background:#ff8fa3; color:#fff; padding:15px; border-radius:30px; text-align:center; font-weight:600; box-shadow: 0 4px 10px rgba(255,143,163,0.3);">
                 ✨ se connecter
             </div>
