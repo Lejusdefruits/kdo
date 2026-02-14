@@ -12,12 +12,10 @@ class PlaylistGenerator:
         return results['items']
 
     def get_playlist_tracks(self, playlist_id):
-        try:
-            results = self.sp.playlist_tracks(playlist_id)
-            tracks = results['items']
-            return [t['track'] for t in tracks if t['track']]
-        except Exception:
-            return []
+        # Removed try/except to expose errors (Invalid ID, 403, 404)
+        results = self.sp.playlist_tracks(playlist_id)
+        tracks = results['items']
+        return [t['track'] for t in tracks if t['track']]
 
     def get_recommendations(self, seed_tracks, limit=50):
         try:
@@ -29,15 +27,12 @@ class PlaylistGenerator:
             return []
 
     def calculate_affinity(self, partner_playlist_id):
-        # Removed try/except to let app handle/show error
         top_artists_data = self.sp.current_user_top_artists(
             limit=50, time_range='long_term')
         my_artists = {a['name'].lower() for a in top_artists_data['items']}
 
+        # This will now raise an exception if ID is invalid
         partner_tracks = self.get_playlist_tracks(partner_playlist_id)
-        if not partner_tracks:
-            raise ValueError(
-                f"Could not load tracks from partner playlist ID: {partner_playlist_id}")
 
         partner_artists = set()
         for t in partner_tracks:
@@ -82,9 +77,8 @@ class PlaylistGenerator:
             final_tracks = self.get_recommendations(top_tracks, limit=50)
 
         elif vibe == "Time Capsule" and year:
-            # Removed try/except silence
-            # Adding market='US' can sometimes help, but leaving standard for now
-            results = self.sp.search(q=f'year:{year}', type='track', limit=50)
+            # Lowered limit to 10 to avoid 'Invalid limit' error
+            results = self.sp.search(q=f'year:{year}', type='track', limit=10)
             if not results or 'tracks' not in results or not results['tracks']['items']:
                 final_tracks = []
             else:
