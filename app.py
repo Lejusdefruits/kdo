@@ -2,10 +2,11 @@ import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import os
+import random
 from backend.logic import get_generator
 
 st.set_page_config(
-    page_title="Spotify Mixer",
+    page_title="Our Mix",
     page_icon="💜",
     layout="centered"
 )
@@ -26,18 +27,50 @@ st.markdown("""
     
     @keyframes float {
         0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-        50% { opacity: 0.6; }
+        10% { opacity: 0.8; }
+        90% { opacity: 0.8; }
         100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
     }
 
-    .heart-bg {
+    .heart-container {
         position: fixed;
         bottom: -10vh;
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 20px;
-        opacity: 0;
-        z-index: 0;
+        z-index: 99;
+        cursor: pointer;
         animation: float 15s infinite linear;
+        user-select: none;
+    }
+
+    .heart-icon {
+        font-size: 25px;
+        transition: transform 0.2s;
+    }
+
+    .heart-msg {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) scale(0);
+        background: rgba(255, 255, 255, 0.9);
+        color: #5f2c82;
+        padding: 5px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: all 0.2s ease;
+        pointer-events: none;
+        font-weight: bold;
+    }
+
+    .heart-container:active .heart-msg,
+    .heart-container:hover .heart-msg {
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
+    }
+    
+    .heart-container:active .heart-icon {
+        transform: scale(1.3);
     }
 
     .stButton>button {
@@ -121,24 +154,31 @@ st.markdown("""
         box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     }
     </style>
-    
-    <div class="heart-bg" style="left: 5%; animation-duration: 12s; font-size: 25px;">💜</div>
-    <div class="heart-bg" style="left: 15%; animation-duration: 15s; font-size: 15px; animation-delay: 2s;">💚</div>
-    <div class="heart-bg" style="left: 25%; animation-duration: 18s; font-size: 30px; animation-delay: 5s;">🤍</div>
-    <div class="heart-bg" style="left: 35%; animation-duration: 10s; font-size: 20px; animation-delay: 1s;">💜</div>
-    <div class="heart-bg" style="left: 45%; animation-duration: 20s; font-size: 18px; animation-delay: 7s;">💚</div>
-    <div class="heart-bg" style="left: 55%; animation-duration: 14s; font-size: 22px; animation-delay: 3s;">🤍</div>
-    <div class="heart-bg" style="left: 65%; animation-duration: 16s; font-size: 28px; animation-delay: 6s;">💜</div>
-    <div class="heart-bg" style="left: 75%; animation-duration: 11s; font-size: 16px; animation-delay: 0s;">💚</div>
-    <div class="heart-bg" style="left: 85%; animation-duration: 19s; font-size: 24px; animation-delay: 4s;">🤍</div>
-    <div class="heart-bg" style="left: 95%; animation-duration: 13s; font-size: 19px; animation-delay: 2s;">💜</div>
-    <div class="heart-bg" style="left: 10%; animation-duration: 22s; font-size: 14px; animation-delay: 8s;">💚</div>
-    <div class="heart-bg" style="left: 50%; animation-duration: 25s; font-size: 32px; animation-delay: 9s;">🤍</div>
-    <div class="heart-bg" style="left: 80%; animation-duration: 17s; font-size: 21px; animation-delay: 5s;">💜</div>
     """, unsafe_allow_html=True)
 
-st.markdown("<h1>S P O T I F Y &nbsp;&nbsp; M I X E R</h1>",
-            unsafe_allow_html=True)
+hearts_html = ""
+messages = ["Love u", "caca", "pipi", "babygirl",
+            "<3", "t'es jolie", "MON CHOUCHOU"]
+emojis = ["💜", "🤍", "💚", "✨", "🦋"]
+
+for i in range(25):
+    left = random.randint(0, 100)
+    duration = random.randint(10, 25)
+    delay = random.randint(0, 10)
+    size = random.randint(15, 30)
+    emoji = random.choice(emojis)
+    msg = random.choice(messages)
+
+    hearts_html += f"""
+    <div class="heart-container" style="left: {left}%; animation-duration: {duration}s; animation-delay: {delay}s;">
+        <div class="heart-icon" style="font-size: {size}px;">{emoji}</div>
+        <div class="heart-msg">{msg}</div>
+    </div>
+    """
+
+st.markdown(hearts_html, unsafe_allow_html=True)
+
+st.markdown("<h1>O U R &nbsp;&nbsp; M I X</h1>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 if 'token_info' not in st.session_state:
@@ -212,7 +252,8 @@ else:
 
         st.markdown("### 01. SELECT VIBE")
 
-        vibes = ["Chill", "Party", "Love", "Throwback", "Energy", "Discovery"]
+        vibes = ["Chill", "Party", "Love", "Throwback",
+                 "Energy", "Discovery", "Time Capsule"]
 
         vibe = st.radio(
             "Vibe", vibes, label_visibility="collapsed", horizontal=True)
@@ -220,18 +261,38 @@ else:
 
         partner_id = None
         guest_url = None
+        year = None
 
         if vibe == "Love":
             try:
                 partner_id = st.secrets["PARTNER_PLAYLIST_ID"]
                 if partner_id and "YOUR" not in partner_id:
                     st.info("Partner connected.")
+
+                    if st.button("Calculate Affinity 💕"):
+                        with st.spinner("Comparing tastes..."):
+                            score, common_artists = generator.calculate_affinity(
+                                partner_id)
+                            st.metric("Musical Compatibility", f"{score}%")
+                            st.progress(score / 100)
+
+                            if common_artists:
+                                st.write(
+                                    f"You both love: {', '.join([a.title() for a in common_artists[:5]])}")
+                            else:
+                                st.write(
+                                    "Opposites attract! No direct matches but good vibes.")
+
             except:
                 pass
 
         elif vibe == "Party":
             guest_url = st.text_input(
                 "Guest Playlist (Spotify URL)", placeholder="https://open.spotify.com/playlist/...")
+
+        elif vibe == "Time Capsule":
+            year = st.slider("Select Year", min_value=1950,
+                             max_value=2025, value=2010)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -241,7 +302,7 @@ else:
         if st.button("Initialize Mix"):
             with st.spinner("Analyzing..."):
                 tracks = generator.generate_playlist_preview(
-                    vibe, partner_id, guest_url)
+                    vibe, partner_id, guest_url, year)
                 st.session_state.preview_tracks = tracks
 
         if st.session_state.preview_tracks:

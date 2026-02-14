@@ -28,7 +28,35 @@ class PlaylistGenerator:
         except Exception:
             return []
 
-    def generate_playlist_preview(self, vibe, partner_id=None, guest_playlist_url=None):
+    def calculate_affinity(self, partner_playlist_id):
+        try:
+            top_artists_data = self.sp.current_user_top_artists(
+                limit=50, time_range='long_term')
+            my_artists = {a['name'].lower() for a in top_artists_data['items']}
+
+            partner_tracks = self.get_playlist_tracks(partner_playlist_id)
+            partner_artists = set()
+            for t in partner_tracks:
+                for a in t['artists']:
+                    partner_artists.add(a['name'].lower())
+
+            common = my_artists.intersection(partner_artists)
+            score = 0
+            if partner_artists:
+                score = int((len(common) / len(my_artists))
+                            * 100) if my_artists else 0
+                score = min(100, score * 3)
+
+            if 0 < score < 50:
+                score += 30
+            elif score == 0 and common:
+                score = 20
+
+            return score, list(common)
+        except Exception:
+            return 0, []
+
+    def generate_playlist_preview(self, vibe, partner_id=None, guest_playlist_url=None, year=None):
         final_tracks = []
 
         if vibe == "Chill":
@@ -50,6 +78,15 @@ class PlaylistGenerator:
             top_tracks = self.get_user_top_tracks(
                 limit=5, time_range='short_term')
             final_tracks = self.get_recommendations(top_tracks, limit=50)
+
+        elif vibe == "Time Capsule" and year:
+            try:
+                results = self.sp.search(
+                    q=f'year:{year}', type='track', limit=50)
+                final_tracks = results['tracks']['items']
+                random.shuffle(final_tracks)
+            except:
+                final_tracks = []
 
         elif vibe == "Love" and partner_id:
             my_tracks = self.get_user_top_tracks(
