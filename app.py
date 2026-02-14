@@ -123,7 +123,7 @@ oauth = SpotifyOAuth(
 )
 
 query_params = st.query_params
-if "code" in query_params:
+if "code" in query_params and not st.session_state.token_info:
     try:
         code = query_params["code"]
         token_info = oauth.get_access_token(code)
