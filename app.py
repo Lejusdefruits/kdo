@@ -192,6 +192,7 @@ except FileNotFoundError:
     st.error("Configuration missing.")
     st.stop()
 
+# Updated scopes including private/collab read
 oauth = SpotifyOAuth(
     client_id=client_id,
     client_secret=client_secret,
@@ -250,9 +251,10 @@ if not auth_token:
 
 else:
     try:
+        # Create single 'sp' instance and share it
         sp = spotipy.Spotify(auth=auth_token)
         user = sp.current_user()
-        generator = get_generator(auth_token)
+        generator = get_generator(sp)
 
         st.write(f"Welcome, {user['display_name']}.")
         st.markdown("---")
@@ -318,7 +320,7 @@ else:
                         vibe, partner_id, guest_url, year)
                     if not tracks:
                         st.warning(
-                            "No tracks found. Check your inputs (Guest URL, etc).")
+                            "No tracks found. Check input logic / discovery.")
                     else:
                         st.session_state.preview_tracks = tracks
                 except Exception as e:
@@ -364,12 +366,11 @@ else:
                             </a>
                         ''', unsafe_allow_html=True)
                     except Exception as e:
-                        st.error(f"Error details: {e}")
-                        st.warning(
-                            "Try sticking clicking the 'LOGOUT / RESET' button in the sidebar.")
+                        st.error(f"Save Error: {e}")
+                        st.warning("If error persists, try 'LOGOUT / RESET'.")
 
     except Exception as e:
-        st.error("Session Expired.")
+        st.error(f"Critical Session Error: {e}")
         if st.button("Refresh"):
             st.session_state.token_info = None
             st.rerun()

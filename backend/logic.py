@@ -10,14 +10,16 @@ class PlaylistGenerator:
     def _extract_id(self, url_or_id):
         if not url_or_id:
             return None
-        # Extract ID from URL if present (e.g. .../playlist/ID?si=...)
+        # Clean query params first
+        url_or_id = url_or_id.split('?')[0]
+        # Extract ID from URL if present (e.g. .../playlist/ID)
         match = re.search(r'playlist/([a-zA-Z0-9]+)', url_or_id)
         if match:
             return match.group(1)
         # Handle URI format (spotify:user:playlist:ID)
         if 'spotify:playlist:' in url_or_id:
             return url_or_id.split(':')[-1]
-        return url_or_id
+        return url_or_id.strip()
 
     def get_user_top_tracks(self, limit=20, time_range='medium_term'):
         try:
@@ -31,7 +33,6 @@ class PlaylistGenerator:
         clean_id = self._extract_id(playlist_id)
         if not clean_id:
             return []
-        # Removed try/except to expose errors (Invalid ID, 403, 404)
         results = self.sp.playlist_tracks(clean_id)
         tracks = results['items']
         return [t['track'] for t in tracks if t['track']]
@@ -52,9 +53,11 @@ class PlaylistGenerator:
             limit=50, time_range='long_term')
         my_artists = {a['name'].lower() for a in top_artists_data['items']}
 
-        # This will now raise an exception if ID is invalid
-        # The app should catch this and tell user to make playlist Public
-        partner_tracks = self.get_playlist_tracks(partner_playlist_id)
+        clean_id = self._extract_id(partner_playlist_id)
+        if not clean_id:
+            raise ValueError("Invalid Partner Playlist ID/URL")
+
+        partner_tracks = self.get_playlist_tracks(clean_id)
 
         partner_artists = set()
         for t in partner_tracks:
@@ -94,7 +97,6 @@ class PlaylistGenerator:
             random.shuffle(final_tracks)
 
         elif vibe == "Discovery":
-            # Fallback logic for seeds if short_term returns empty
             top_tracks = self.get_user_top_tracks(
                 limit=5, time_range='short_term')
             if not top_tracks:
@@ -107,7 +109,6 @@ class PlaylistGenerator:
             final_tracks = self.get_recommendations(top_tracks, limit=50)
 
         elif vibe == "Time Capsule" and year:
-            # Lowered limit to 10 to avoid 'Invalid limit' error
             results = self.sp.search(q=f'year:{year}', type='track', limit=10)
             if not results or 'tracks' not in results or not results['tracks']['items']:
                 final_tracks = []
@@ -178,7 +179,8 @@ class PlaylistGenerator:
 
         return playlist['external_urls']['spotify']
 
+# Updated: Accepts sp client directly
 
-def get_generator(token):
-    sp = spotipy.Spotify(auth=token)
+
+def get_generator(sp):
     return PlaylistGenerator(sp)
