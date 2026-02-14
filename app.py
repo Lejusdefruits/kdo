@@ -271,17 +271,20 @@ else:
 
                     if st.button("Calculate Affinity 💕"):
                         with st.spinner("Comparing tastes..."):
-                            score, common_artists = generator.calculate_affinity(
-                                partner_id)
-                            st.metric("Musical Compatibility", f"{score}%")
-                            st.progress(score / 100)
+                            try:
+                                score, common_artists = generator.calculate_affinity(
+                                    partner_id)
+                                st.metric("Musical Compatibility", f"{score}%")
+                                st.progress(score / 100)
 
-                            if common_artists:
-                                st.write(
-                                    f"You both love: {', '.join([a.title() for a in common_artists[:5]])}")
-                            else:
-                                st.write(
-                                    "Opposites attract! No direct matches but good vibes.")
+                                if common_artists:
+                                    st.write(
+                                        f"You both love: {', '.join([a.title() for a in common_artists[:5]])}")
+                                else:
+                                    st.write(
+                                        "Opposites attract! No direct matches but good vibes.")
+                            except Exception as e:
+                                st.error(f"Affinity Error: {e}")
 
             except:
                 pass
@@ -301,9 +304,16 @@ else:
 
         if st.button("Initialize Mix"):
             with st.spinner("Analyzing..."):
-                tracks = generator.generate_playlist_preview(
-                    vibe, partner_id, guest_url, year)
-                st.session_state.preview_tracks = tracks
+                try:
+                    tracks = generator.generate_playlist_preview(
+                        vibe, partner_id, guest_url, year)
+                    if not tracks:
+                        st.warning(
+                            "No tracks found for this mood. Try another one!")
+                    else:
+                        st.session_state.preview_tracks = tracks
+                except Exception as e:
+                    st.error(f"Generation Error: {e}")
 
         if st.session_state.preview_tracks:
             st.markdown("<br>", unsafe_allow_html=True)
