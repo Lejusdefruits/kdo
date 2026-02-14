@@ -196,7 +196,7 @@ oauth = SpotifyOAuth(
     client_id=client_id,
     client_secret=client_secret,
     redirect_uri=redirect_uri,
-    scope="user-library-read user-top-read playlist-modify-public playlist-modify-private"
+    scope="user-library-read user-top-read playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative"
 )
 
 if st.sidebar.button("LOGOUT / RESET", type="primary"):

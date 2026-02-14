@@ -1,25 +1,46 @@
 import spotipy
 import random
+import re
 
 
 class PlaylistGenerator:
     def __init__(self, sp):
         self.sp = sp
 
+    def _extract_id(self, url_or_id):
+        if not url_or_id:
+            return None
+        # Extract ID from URL if present (e.g. .../playlist/ID?si=...)
+        match = re.search(r'playlist/([a-zA-Z0-9]+)', url_or_id)
+        if match:
+            return match.group(1)
+        # Handle URI format (spotify:user:playlist:ID)
+        if 'spotify:playlist:' in url_or_id:
+            return url_or_id.split(':')[-1]
+        return url_or_id
+
     def get_user_top_tracks(self, limit=20, time_range='medium_term'):
-        results = self.sp.current_user_top_tracks(
-            limit=limit, time_range=time_range)
-        return results['items']
+        try:
+            results = self.sp.current_user_top_tracks(
+                limit=limit, time_range=time_range)
+            return results['items']
+        except:
+            return []
 
     def get_playlist_tracks(self, playlist_id):
+        clean_id = self._extract_id(playlist_id)
+        if not clean_id:
+            return []
         # Removed try/except to expose errors (Invalid ID, 403, 404)
-        results = self.sp.playlist_tracks(playlist_id)
+        results = self.sp.playlist_tracks(clean_id)
         tracks = results['items']
         return [t['track'] for t in tracks if t['track']]
 
     def get_recommendations(self, seed_tracks, limit=50):
         try:
             seed_ids = [t['id'] for t in seed_tracks[:5]]
+            if not seed_ids:
+                return []
             results = self.sp.recommendations(
                 seed_tracks=seed_ids, limit=limit)
             return results['tracks']
@@ -32,6 +53,7 @@ class PlaylistGenerator:
         my_artists = {a['name'].lower() for a in top_artists_data['items']}
 
         # This will now raise an exception if ID is invalid
+        # The app should catch this and tell user to make playlist Public
         partner_tracks = self.get_playlist_tracks(partner_playlist_id)
 
         partner_artists = set()
@@ -72,8 +94,16 @@ class PlaylistGenerator:
             random.shuffle(final_tracks)
 
         elif vibe == "Discovery":
+            # Fallback logic for seeds if short_term returns empty
             top_tracks = self.get_user_top_tracks(
                 limit=5, time_range='short_term')
+            if not top_tracks:
+                top_tracks = self.get_user_top_tracks(
+                    limit=5, time_range='medium_term')
+            if not top_tracks:
+                top_tracks = self.get_user_top_tracks(
+                    limit=5, time_range='long_term')
+
             final_tracks = self.get_recommendations(top_tracks, limit=50)
 
         elif vibe == "Time Capsule" and year:
