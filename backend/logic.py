@@ -19,40 +19,78 @@ class PlaylistGenerator:
         except Exception:
             return []
 
+    def get_recommendations(self, seed_tracks, limit=50):
+        try:
+            seed_ids = [t['id'] for t in seed_tracks[:5]]
+            results = self.sp.recommendations(
+                seed_tracks=seed_ids, limit=limit)
+            return results['tracks']
+        except Exception:
+            return []
+
     def generate_playlist_preview(self, vibe, partner_id=None, guest_playlist_url=None):
-        my_top_tracks = self.get_user_top_tracks(limit=30)
-        my_tracks = [t for t in my_top_tracks]
-
-        secondary_tracks = []
-
-        if vibe == "romantique" and partner_id:
-            secondary_tracks = self.get_playlist_tracks(partner_id)
-
-        elif vibe == "soirée" and guest_playlist_url:
-            secondary_tracks = self.get_playlist_tracks(guest_playlist_url)
-
         final_tracks = []
 
-        if secondary_tracks:
-            random.shuffle(my_tracks)
-            random.shuffle(secondary_tracks)
+        if vibe == "Chill":
+            final_tracks = self.get_user_top_tracks(
+                limit=50, time_range='medium_term')
+            random.shuffle(final_tracks)
 
-            max_len = max(len(my_tracks), len(secondary_tracks))
+        elif vibe == "Throwback":
+            final_tracks = self.get_user_top_tracks(
+                limit=50, time_range='long_term')
+            random.shuffle(final_tracks)
+
+        elif vibe == "Energy":
+            final_tracks = self.get_user_top_tracks(
+                limit=50, time_range='short_term')
+            random.shuffle(final_tracks)
+
+        elif vibe == "Discovery":
+            top_tracks = self.get_user_top_tracks(
+                limit=5, time_range='short_term')
+            final_tracks = self.get_recommendations(top_tracks, limit=50)
+
+        elif vibe == "Love" and partner_id:
+            my_tracks = self.get_user_top_tracks(
+                limit=30, time_range='medium_term')
+            partner_tracks = self.get_playlist_tracks(partner_id)
+
+            random.shuffle(my_tracks)
+            random.shuffle(partner_tracks)
+
+            max_len = max(len(my_tracks), len(partner_tracks))
             for i in range(max_len):
                 if i < len(my_tracks):
                     final_tracks.append(my_tracks[i])
-                if i < len(secondary_tracks):
-                    final_tracks.append(secondary_tracks[i])
+                if i < len(partner_tracks):
+                    final_tracks.append(partner_tracks[i])
+
+        elif vibe == "Party" and guest_playlist_url:
+            my_tracks = self.get_user_top_tracks(
+                limit=30, time_range='short_term')
+            guest_tracks = self.get_playlist_tracks(guest_playlist_url)
+
+            random.shuffle(my_tracks)
+            random.shuffle(guest_tracks)
+
+            max_len = max(len(my_tracks), len(guest_tracks))
+            for i in range(max_len):
+                if i < len(my_tracks):
+                    final_tracks.append(my_tracks[i])
+                if i < len(guest_tracks):
+                    final_tracks.append(guest_tracks[i])
+
         else:
-            final_tracks = my_tracks
+            final_tracks = self.get_user_top_tracks(
+                limit=50, time_range='medium_term')
             random.shuffle(final_tracks)
 
-        # Return simpler objects for preview
         return final_tracks[:50]
 
     def create_playlist_from_tracks(self, user_id, tracks, vibe, custom_message=None):
-        playlist_name = f"mix {vibe} 💖"
-        description = f"playlist générée pour le mode {vibe}"
+        playlist_name = f"Mix {vibe}"
+        description = f"Generated for {vibe} vibe"
 
         if custom_message:
             description += f" - {custom_message}"
@@ -64,7 +102,6 @@ class PlaylistGenerator:
         track_uris = [t['uri'] for t in tracks]
 
         if track_uris:
-            # remove duplicates
             unique_uris = []
             seen = set()
             for uri in track_uris:
@@ -72,7 +109,6 @@ class PlaylistGenerator:
                     unique_uris.append(uri)
                     seen.add(uri)
 
-            # Add in chunks of 100
             for i in range(0, len(unique_uris), 100):
                 self.sp.playlist_add_items(playlist_id, unique_uris[i:i+100])
 
