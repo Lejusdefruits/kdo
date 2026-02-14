@@ -199,6 +199,13 @@ oauth = SpotifyOAuth(
     scope="user-library-read user-top-read playlist-modify-public playlist-modify-private"
 )
 
+if st.sidebar.button("LOGOUT / RESET", type="primary"):
+    if os.path.exists(".cache"):
+        os.remove(".cache")
+    st.session_state.token_info = None
+    st.cache_data.clear()
+    st.rerun()
+
 query_params = st.query_params
 if "code" in query_params and not st.session_state.token_info:
     try:
@@ -266,7 +273,10 @@ else:
         if vibe == "Love":
             try:
                 partner_id = st.secrets["PARTNER_PLAYLIST_ID"]
-                if partner_id and "YOUR" not in partner_id:
+                if not partner_id or "YOUR" in partner_id:
+                    st.warning(
+                        "Please set 'PARTNER_PLAYLIST_ID' in secrets.toml")
+                else:
                     st.info("Partner connected.")
 
                     if st.button("Calculate Affinity 💕"):
@@ -285,9 +295,8 @@ else:
                                         "Opposites attract! No direct matches but good vibes.")
                             except Exception as e:
                                 st.error(f"Affinity Error: {e}")
-
-            except:
-                pass
+            except Exception as e:
+                st.error(f"Secret Error: {e}")
 
         elif vibe == "Party":
             guest_url = st.text_input(
@@ -309,7 +318,7 @@ else:
                         vibe, partner_id, guest_url, year)
                     if not tracks:
                         st.warning(
-                            "No tracks found for this mood. Try another one!")
+                            "No tracks found. Check your inputs (Guest URL, etc).")
                     else:
                         st.session_state.preview_tracks = tracks
                 except Exception as e:
@@ -356,6 +365,8 @@ else:
                         ''', unsafe_allow_html=True)
                     except Exception as e:
                         st.error(f"Error details: {e}")
+                        st.warning(
+                            "Try sticking clicking the 'LOGOUT / RESET' button in the sidebar.")
 
     except Exception as e:
         st.error("Session Expired.")
