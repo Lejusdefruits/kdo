@@ -261,6 +261,23 @@ else:
     try:
         # Create single 'sp' instance and share it
         sp = spotipy.Spotify(auth=auth_token)
+
+        # --- AUTO-RESET IF SCOPES ARE MISSING ---
+        current_scopes = token_info.get('scope', '')
+        required_scopes = ["playlist-modify-public", "playlist-modify-private"]
+        missing_scopes = [
+            s for s in required_scopes if s not in current_scopes]
+
+        if missing_scopes:
+            st.warning(
+                f"⚠️ Updates found! Missing permissions: {missing_scopes}. Resetting connection...")
+            if os.path.exists(".cache"):
+                os.remove(".cache")
+            st.session_state.token_info = None
+            st.cache_data.clear()
+            st.rerun()
+        # ----------------------------------------
+
         user = sp.current_user()
         generator = get_generator(sp)
 
@@ -303,6 +320,13 @@ else:
                                 else:
                                     st.write(
                                         "Opposites attract! No direct matches but good vibes.")
+                            except spotipy.SpotifyException as e:
+                                if e.http_status == 403:
+                                    st.error("🚫 Access Forbidden (403).")
+                                    st.warning(
+                                        f"Spotify refuses to read this playlist ({partner_id}). Ensure it is PUBLIC or SHARED, or follow it in your library.")
+                                else:
+                                    st.error(f"Spotify Error: {e}")
                             except Exception as e:
                                 st.error(f"Affinity Error: {e}")
             except Exception as e:
