@@ -265,8 +265,10 @@ else:
 
         # --- AUTO-RESET IF SCOPES ARE MISSING ---
         current_scopes = token_info.get('scope', '')
-        # Debug display (remove later if needed)
-        # st.caption(f"Debug: Active Scopes: {current_scopes}")
+
+        # DEBUG DISPLAY: SHOW SCOPES TO USER
+        st.info(f"🔑 Active Permissions: `{current_scopes}`")
+        st.caption("If 'playlist-modify' is missing, click RESET.")
 
         required_scopes = ["playlist-modify-public", "playlist-modify-private"]
         missing_scopes = [
@@ -275,8 +277,8 @@ else:
         if missing_scopes:
             st.warning(
                 f"⚠️ Updates found! Missing permissions: {missing_scopes}. Resetting connection...")
-            if os.path.exists(".cache"):
-                os.remove(".cache")
+            if os.path.exists(".cache_v2"):
+                os.remove(".cache_v2")
             st.session_state.token_info = None
             st.cache_data.clear()
             st.rerun()
@@ -285,7 +287,16 @@ else:
         user = sp.current_user()
         generator = get_generator(sp)
 
-        st.write(f"Welcome, {user['display_name']}.")
+        st.write(f"Welcome, **{user['display_name']}** (`{user['id']}`).")
+
+        with st.expander("🛠️ Toujours une erreur 403 ? (IMPORTANT)"):
+            st.write(
+                "1. Allez sur votre **Spotify Developer Dashboard** > Votre App.")
+            st.write("2. Cliquez sur **Users and Access**.")
+            st.write(
+                "3. Vérifiez que votre email Spotify est bien listé en tant qu'utilisateur.")
+            st.write(
+                "4. Si l'app est en mode 'Development Mode', seuls les utilisateurs listés peuvent créer des playlists.")
         st.markdown("---")
 
         st.markdown("### 01. SELECT VIBE")
