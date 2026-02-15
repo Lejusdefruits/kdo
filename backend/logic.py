@@ -97,18 +97,7 @@ class PlaylistGenerator:
             random.shuffle(final_tracks)
 
         elif vibe == "Discovery":
-            top_tracks = self.get_user_top_tracks(
-                limit=5, time_range='short_term')
-            if not top_tracks:
-                top_tracks = self.get_user_top_tracks(
-                    limit=5, time_range='medium_term')
-            if not top_tracks:
-                top_tracks = self.get_user_top_tracks(
-                    limit=5, time_range='long_term')
-
-            final_tracks = self.get_recommendations(top_tracks, limit=50)
-
-        elif vibe == "Time Capsule" and year:
+        if vibe == "Time Capsule" and year:
             results = self.sp.search(q=f'year:{year}', type='track', limit=10)
             if not results or 'tracks' not in results or not results['tracks']['items']:
                 final_tracks = []
@@ -149,16 +138,45 @@ class PlaylistGenerator:
         else:
             final_tracks = self.get_user_top_tracks(
                 limit=50, time_range='medium_term')
+
+            # --- CHILL VIBE LOGIC ---
+            if vibe == "Chill":
+                final_tracks = self._filter_by_vibe(
+                    final_tracks, target_energy=0.5, target_valence=0.5)
+            # ------------------------
+
             random.shuffle(final_tracks)
 
         return final_tracks[:50]
 
-    def create_playlist_from_tracks(self, user_id, tracks, vibe, custom_message=None):
-        playlist_name = f"Mix {vibe}"
-        description = f"Generated for {vibe} vibe"
+    def _filter_by_vibe(self, tracks, target_energy, target_valence):
+        """Filter tracks based on Spotify Audio Features."""
+        if not tracks:
+            return []
 
-        if custom_message:
-            description += f" - {custom_message}"
+        track_ids = [t['id'] for t in tracks]
+        # Chunk into 100s for audio_features API
+        features = []
+        for i in range(0, len(track_ids), 100):
+            chunk = track_ids[i:i+100]
+            features.extend(self.sp.audio_features(chunk))
+
+        filtered = []
+        for t, f in zip(tracks, features):
+            if f:
+                # Chill criteria: Low Energy (< 0.6)
+                if f['energy'] < 0.6:
+                    filtered.append(t)
+
+        return filtered if filtered else tracks  # Fallback to all if too strict
+
+    def create_playlist_from_tracks(self, user_id, tracks, vibe, playlist_name_input=None):
+        if playlist_name_input:
+            playlist_name = playlist_name_input
+        else:
+            playlist_name = f"Mix {vibe}"
+
+        description = f"Generated for {vibe} vibe"
 
         # Try direct API call to /me/playlists to match docs and avoid user ID issues
         # (Equivalent to POST https://api.spotify.com/v1/me/playlists)

@@ -259,50 +259,23 @@ if not auth_token:
             "Note: Do not put your Spotify password in secrets.toml. The app uses OAuth2 (like 'Login with Google') for security.")
 
 else:
+    # --- CLEAN UI SETUP ---
     try:
-        # Create single 'sp' instance and share it
         sp = spotipy.Spotify(auth=auth_token)
-
-        # --- AUTO-RESET IF SCOPES ARE MISSING ---
-        current_scopes = token_info.get('scope', '')
-
-        # DEBUG DISPLAY: SHOW SCOPES TO USER
-        st.info(f"🔑 Active Permissions: `{current_scopes}`")
-        st.caption("If 'playlist-modify' is missing, click RESET.")
-
-        required_scopes = ["playlist-modify-public", "playlist-modify-private"]
-        missing_scopes = [
-            s for s in required_scopes if s not in current_scopes]
-
-        if missing_scopes:
-            st.warning(
-                f"⚠️ Updates found! Missing permissions: {missing_scopes}. Resetting connection...")
-            if os.path.exists(".cache_v2"):
-                os.remove(".cache_v2")
-            st.session_state.token_info = None
-            st.cache_data.clear()
-            st.rerun()
-        # ----------------------------------------
-
         user = sp.current_user()
         generator = get_generator(sp)
 
-        st.write(f"Welcome, **{user['display_name']}** (`{user['id']}`).")
-
-        with st.expander("🛠️ Toujours une erreur 403 ? (IMPORTANT)"):
-            st.write(
-                "1. Allez sur votre **Spotify Developer Dashboard** > Votre App.")
-            st.write("2. Cliquez sur **Users and Access**.")
-            st.write(
-                "3. Vérifiez que votre email Spotify est bien listé en tant qu'utilisateur.")
-            st.write(
-                "4. Si l'app est en mode 'Development Mode', seuls les utilisateurs listés peuvent créer des playlists.")
+        # Center Welcome Message
+        st.markdown(
+            f"<h3 style='text-align: center; color: #fff;'>Welcome, {user['display_name']}</h3>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align: center; color: #888; font-size: 14px;'>Ready to mix?</div>", unsafe_allow_html=True)
         st.markdown("---")
 
         st.markdown("### 01. SELECT VIBE")
 
         vibes = ["Chill", "Party", "Love", "Throwback",
-                 "Energy", "Discovery", "Time Capsule"]
+                 "Energy", "Time Capsule"]
 
         vibe = st.radio(
             "Vibe", vibes, label_visibility="collapsed", horizontal=True)
@@ -392,9 +365,15 @@ else:
                     """, unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("### 03. DETAILS")
-            msg = st.text_input("Personal Message",
-                                placeholder="E.g. For our winter nights...")
+
+            default_name = f"Our Mix - {vibe} 🎶"
+            if vibe == "Time Capsule" and year:
+                default_name = f"Time Capsule - {year} ⏳"
+
+            playlist_name = st.text_input(
+                "Nom de la playlist", value=default_name)
 
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Save Collection"):
@@ -404,7 +383,7 @@ else:
                             user['id'],
                             st.session_state.preview_tracks,
                             vibe,
-                            custom_message=msg
+                            playlist_name_input=playlist_name
                         )
                         st.success("Successfully Created.")
                         st.markdown(f'''
