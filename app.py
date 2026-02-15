@@ -368,7 +368,7 @@ else:
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("### 03. DETAILS")
 
-            default_name = f"Our Mix - {vibe} 🎶"
+            default_name = f"playlist {vibe}"
             if vibe == "Time Capsule" and year:
                 default_name = f"Time Capsule - {year} ⏳"
 
