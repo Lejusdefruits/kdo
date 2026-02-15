@@ -249,6 +249,14 @@ if not auth_token:
         </a>
     ''', unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.expander("ℹ️ Connection Troubleshooting"):
+        st.write(f"**Redirect URI**: `{redirect_uri}`")
+        st.write(
+            "Ensure this URL is exactly the same in your Spotify Dashboard > Settings > Redirect URIs.")
+        st.warning(
+            "Note: Do not put your Spotify password in secrets.toml. The app uses OAuth2 (like 'Login with Google') for security.")
+
 else:
     try:
         # Create single 'sp' instance and share it
