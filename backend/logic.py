@@ -160,9 +160,20 @@ class PlaylistGenerator:
         if custom_message:
             description += f" - {custom_message}"
 
-        # Changed to public=True to avoid 403 Forbidden on private scopes
-        playlist = self.sp.user_playlist_create(
-            user_id, playlist_name, public=True, description=description)
+        # Try direct API call to /me/playlists to match docs and avoid user ID issues
+        # (Equivalent to POST https://api.spotify.com/v1/me/playlists)
+        try:
+            playlist = self.sp.user_playlist_create(
+                user_id, playlist_name, public=True, description=description)
+        except Exception:
+            # Fallback: strict adherence to docs using /me/playlists
+            data = {
+                "name": playlist_name,
+                "public": True,
+                "description": description
+            }
+            playlist = self.sp._post("me/playlists", payload=data)
+
         playlist_id = playlist['id']
 
         track_uris = [t['uri'] for t in tracks]
