@@ -186,8 +186,19 @@ class PlaylistGenerator:
                     unique_uris.append(uri)
                     seen.add(uri)
 
+            # Split into chunks of 100 (API limit)
             for i in range(0, len(unique_uris), 100):
-                self.sp.playlist_add_items(playlist_id, unique_uris[i:i+100])
+                batch = unique_uris[i:i+100]
+                # Direct API call as per docs: POST https://api.spotify.com/v1/playlists/{playlist_id}/items
+                try:
+                    self.sp._post(
+                        f"playlists/{playlist_id}/items",
+                        payload={"uris": batch}
+                    )
+                except Exception as e:
+                    print(f"Error adding batch {i}: {e}")
+                    # Try fallback specific to some token types
+                    self.sp.playlist_add_items(playlist_id, batch)
 
         return playlist['external_urls']['spotify']
 
