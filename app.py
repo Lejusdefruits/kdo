@@ -383,7 +383,7 @@ else:
 
             default_name = f"playlist {vibe}"
             if vibe == "Time Capsule" and year:
-                default_name = f"Time Capsule - {year} ⏳"
+                default_name = f"Time Capsule - {year}"
 
             playlist_name = st.text_input(
                 "Nom de la playlist", value=default_name)
