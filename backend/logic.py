@@ -33,20 +33,27 @@ class PlaylistGenerator:
         clean_id = self._extract_id(playlist_id)
         if not clean_id:
             return []
-        results = self.sp.playlist_tracks(clean_id)
-        tracks = results['items']
-        return [t['track'] for t in tracks if t['track']]
 
-    def get_recommendations(self, seed_tracks, limit=50):
         try:
-            seed_ids = [t['id'] for t in seed_tracks[:5]]
-            if not seed_ids:
-                return []
-            results = self.sp.recommendations(
-                seed_tracks=seed_ids, limit=limit)
-            return results['tracks']
+            # Use playlist_items (newer endpoint)
+            results = self.sp.playlist_items(
+                clean_id, additional_types=['track'])
+            tracks = results['items']
+
+            # Simple pagination to get at least 100 tracks if available
+            while results['next'] and len(tracks) < 100:
+                results = self.sp.next(results)
+                tracks.extend(results['items'])
+
+            return [t['track'] for t in tracks if t.get('track')]
         except Exception:
-            return []
+            # Fallback to direct API call if wrapper fails
+            try:
+                results = self.sp._get(
+                    f"playlists/{clean_id}/tracks", limit=50)
+                return [t['track'] for t in results['items'] if t.get('track')]
+            except Exception:
+                return []
 
     def calculate_affinity(self, partner_playlist_id):
         top_artists_data = self.sp.current_user_top_artists(
@@ -55,9 +62,11 @@ class PlaylistGenerator:
 
         clean_id = self._extract_id(partner_playlist_id)
         if not clean_id:
-            raise ValueError("Invalid Partner Playlist ID/URL")
+            return 0, []
 
         partner_tracks = self.get_playlist_tracks(clean_id)
+        if not partner_tracks:
+            return 0, []
 
         partner_artists = set()
         for t in partner_tracks:

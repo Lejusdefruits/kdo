@@ -250,17 +250,35 @@ if not auth_token:
         </a>
     ''', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.expander("ℹ️ Connection Troubleshooting"):
-        st.write(f"**Redirect URI**: `{redirect_uri}`")
-        st.write(
-            "Ensure this URL is exactly the same in your Spotify Dashboard > Settings > Redirect URIs.")
-        st.warning(
-            "Note: Do not put your Spotify password in secrets.toml. The app uses OAuth2 (like 'Login with Google') for security.")
 
 else:
     # --- CLEAN UI SETUP ---
     try:
+        sp = spotipy.Spotify(auth=auth_token)
+        user = sp.current_user()
+        generator = get_generator(sp)
+
+    # --- CLEAN UI SETUP ---
+    try:
+        # Custom CSS for "Classy" look
+        st.markdown("""
+        <style>
+        div.stButton > button:first-child {
+            background: linear-gradient(45deg, #49a09d, #5f2c82);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        div.stButton > button:first-child:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(73, 160, 157, 0.4);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         sp = spotipy.Spotify(auth=auth_token)
         user = sp.current_user()
         generator = get_generator(sp)
@@ -272,7 +290,7 @@ else:
             "<div style='text-align: center; color: #888; font-size: 14px;'>Ready to mix?</div>", unsafe_allow_html=True)
         st.markdown("---")
 
-        st.markdown("### 01. SELECT VIBE")
+        st.markdown("### 01. SELECT VIBE 🎧")
 
         vibes = ["Chill", "Party", "Love", "Throwback",
                  "Energy", "Time Capsule"]
@@ -348,7 +366,7 @@ else:
 
         if st.session_state.preview_tracks:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("### 02. PREVIEW")
+            st.markdown("### 02. PREVIEW 🎵")
 
             with st.container():
                 for track in st.session_state.preview_tracks[:5]:
@@ -366,7 +384,7 @@ else:
 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("### 03. DETAILS")
+            st.markdown("### 03. DETAILS ✍️")
 
             default_name = f"playlist {vibe}"
             if vibe == "Time Capsule" and year:
