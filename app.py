@@ -253,12 +253,7 @@ if not auth_token:
 
 else:
     # --- CLEAN UI SETUP ---
-    try:
-        sp = spotipy.Spotify(auth=auth_token)
-        user = sp.current_user()
-        generator = get_generator(sp)
 
-    # --- CLEAN UI SETUP ---
     try:
         # Custom CSS for "Classy" look
         st.markdown("""
