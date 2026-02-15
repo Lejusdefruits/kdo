@@ -160,8 +160,9 @@ class PlaylistGenerator:
         if custom_message:
             description += f" - {custom_message}"
 
+        # Changed to public=True to avoid 403 Forbidden on private scopes
         playlist = self.sp.user_playlist_create(
-            user_id, playlist_name, public=False, description=description)
+            user_id, playlist_name, public=True, description=description)
         playlist_id = playlist['id']
 
         track_uris = [t['uri'] for t in tracks]

@@ -264,6 +264,9 @@ else:
 
         # --- AUTO-RESET IF SCOPES ARE MISSING ---
         current_scopes = token_info.get('scope', '')
+        # Debug display (remove later if needed)
+        # st.caption(f"Debug: Active Scopes: {current_scopes}")
+
         required_scopes = ["playlist-modify-public", "playlist-modify-private"]
         missing_scopes = [
             s for s in required_scopes if s not in current_scopes]
