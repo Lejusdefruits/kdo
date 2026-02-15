@@ -96,8 +96,7 @@ class PlaylistGenerator:
                 limit=50, time_range='short_term')
             random.shuffle(final_tracks)
 
-        elif vibe == "Discovery":
-        if vibe == "Time Capsule" and year:
+        elif vibe == "Time Capsule" and year:
             results = self.sp.search(q=f'year:{year}', type='track', limit=10)
             if not results or 'tracks' not in results or not results['tracks']['items']:
                 final_tracks = []
