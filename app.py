@@ -285,7 +285,7 @@ else:
             "<div style='text-align: center; color: #888; font-size: 14px;'>Ready to mix?</div>", unsafe_allow_html=True)
         st.markdown("---")
 
-        st.markdown("### 01. SELECT VIBE 🎧")
+        st.markdown("### 01. SELECT VIBE")
 
         vibes = ["Chill", "Party", "Love", "Throwback",
                  "Energy", "Time Capsule"]
@@ -307,7 +307,7 @@ else:
                 else:
                     st.info("Partner connected.")
 
-                    if st.button("Calculate Affinity 💕"):
+                    if st.button("Calculate Affinity"):
                         with st.spinner("Comparing tastes..."):
                             try:
                                 score, common_artists = generator.calculate_affinity(
@@ -361,7 +361,7 @@ else:
 
         if st.session_state.preview_tracks:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("### 02. PREVIEW 🎵")
+            st.markdown("### 02. PREVIEW")
 
             with st.container():
                 for track in st.session_state.preview_tracks[:5]:
@@ -379,7 +379,7 @@ else:
 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("### 03. DETAILS ✍️")
+            st.markdown("### 03. DETAILS")
 
             default_name = f"playlist {vibe}"
             if vibe == "Time Capsule" and year:

@@ -56,9 +56,18 @@ class PlaylistGenerator:
                 return []
 
     def calculate_affinity(self, partner_playlist_id):
-        top_artists_data = self.sp.current_user_top_artists(
-            limit=50, time_range='long_term')
-        my_artists = {a['name'].lower() for a in top_artists_data['items']}
+        # Fetch Top Artists from ALL time ranges for better accuracy
+        ranges = ['short_term', 'medium_term', 'long_term']
+        my_artists = set()
+
+        for time_range in ranges:
+            try:
+                data = self.sp.current_user_top_artists(
+                    limit=50, time_range=time_range)
+                for item in data.get('items', []):
+                    my_artists.add(item['name'].lower())
+            except:
+                pass
 
         clean_id = self._extract_id(partner_playlist_id)
         if not clean_id:
@@ -70,20 +79,30 @@ class PlaylistGenerator:
 
         partner_artists = set()
         for t in partner_tracks:
-            for a in t['artists']:
-                partner_artists.add(a['name'].lower())
+            # Handle track['artists'] list safely
+            if 'artists' in t:
+                for a in t['artists']:
+                    partner_artists.add(a['name'].lower())
 
         common = my_artists.intersection(partner_artists)
-        score = 0
-        if partner_artists:
-            score = int((len(common) / len(my_artists))
-                        * 100) if my_artists else 0
-            score = min(100, score * 3)
 
-        if 0 < score < 50:
-            score += 30
-        elif score == 0 and common:
-            score = 20
+        # Calculate Score
+        if not my_artists:
+            return 0, []
+
+        # Base score: % of playlist artists that match my known favorites
+        # We divide by len(partner_artists) because we want to know
+        # "How much of THIS playlist do I like?"
+        if not partner_artists:
+            return 0, []
+
+        score = int((len(common) / len(partner_artists)) * 100)
+
+        # Boost logic: if > 20% match, we curve it up to make it feel better
+        if score > 20:
+            score = min(100, score + 20)
+        if score > 80:  # If it's really high, just give 100
+            score = 100
 
         return score, list(common)
 
